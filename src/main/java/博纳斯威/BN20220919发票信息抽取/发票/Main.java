@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 public class Main {
 
-    static String[] headKey = {"文件路径信息","文件名称","凭证号","页码","开票日期","发票号码","小写合计金额","大写合计金额"};
+    static String[] headKey = {"文件路径信息","文件名称","凭证号","页码","开票日期","发票号码","小写合计金额","大写合计金额","交易对手名称"};
 
     public static void main(String[] args) {
 

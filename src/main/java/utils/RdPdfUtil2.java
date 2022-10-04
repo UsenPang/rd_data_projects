@@ -97,32 +97,20 @@ public class RdPdfUtil2 {
     }
 
 
-    public static void lsAllCast2Pic(String source) throws InterruptedException {
+    public static void lsAllCast2Jpg(String source) throws InterruptedException {
         Pattern p = Pattern.compile("\\.(pdf|PDF)_\\d+\\.pdf");
         List<File> fileList = FileUtil.loopFiles(new File(source), f -> !f.getName().endsWith(".html") && p.matcher(f.getName()).find());
 
 
         //设置线程池参数
-        corePoolSize = Runtime.getRuntime().availableProcessors() - 2;
+        corePoolSize = Runtime.getRuntime().availableProcessors() - 4;
         maximumPoolSize = corePoolSize + 1;
         splitThreadPool.setCorePoolSize(corePoolSize);
         splitThreadPool.setMaximumPoolSize(maximumPoolSize);
 
-
-        int listNum = corePoolSize * 5;
-        listNum = fileList.size() > listNum ? listNum : 1;
-        List<List<File>> lls = ListUtils.partition(fileList, (fileList.size() + listNum - 1) / listNum);
-        for (List<File> list : lls) {
-            splitThreadPool.execute(() -> {
-                int size = list.size();
-                for (int i = 0; i < size; i++) {
-                    File file = list.get(i);
-                    //转换图片
-                    simplePagePdf2Pic(file);
-                    list.set(i, null);
-                }
-            });
-        }
+        fileList.forEach(f->{
+            splitThreadPool.execute(()->simplePagePdf2Pic(f));
+        });
     }
 
 
@@ -215,7 +203,7 @@ public class RdPdfUtil2 {
     public static void lsSplit2Jpg(String src, String dest, boolean isDelete) {
         Pattern p = Pattern.compile("\\.(pdf|PDF)_\\d+\\.pdf");
         //找出所有被拆分成pdf,但还没被转换成JPG的文件
-        List<File> fileList = FileUtil.loopFiles(src, f -> p.matcher(f.getName()).find());
+        List<File> fileList = FileUtil.loopFiles(dest, f -> p.matcher(f.getName()).find());
         //未拆分pdf执行拆分，然后加入到列表中
         fileList.addAll(lsSplit2Pdf(src, dest, isDelete));
 
@@ -338,16 +326,15 @@ public class RdPdfUtil2 {
 
             // PageNumber是从1开始计数的
             int numberOfPages = reader.getNumberOfPages();
-            int pageNumber = 1;
-            while (pageNumber <= numberOfPages) {
+            for (int pageNumber = 1; pageNumber <= numberOfPages; pageNumber++) {
                 Document doc = new Document();
-                String fileName = pdfFile.getName() + "_" + pageNumber + ".pdf";
-
-                PdfCopy pdfCopy = null;
-                File splitFile = new File(dirFile, fileName);
-                pdfCopy = new PdfCopy(doc, new FileOutputStream(splitFile));
-                splits.add(splitFile);
-
+                String prefix = pdfFile.getName() + "_" + pageNumber;
+                String pdfName = prefix + ".pdf";
+                String jpgName = prefix + ".jpg";
+                File splitFile = new File(dirFile, pdfName);
+                File jpg = new File(dirFile, jpgName);
+                if (splitFile.exists() || jpg.exists()) continue;
+                PdfCopy pdfCopy = new PdfCopy(doc, new FileOutputStream(splitFile));
                 // 将pdf按页复制到新建的PDF中
                 doc.open();
                 doc.newPage();
@@ -356,11 +343,11 @@ public class RdPdfUtil2 {
 
                 pdfCopy.close();
                 doc.close();
-                pageNumber++;
+                splits.add(splitFile);
             }
-
             reader.close();
             if (isDelete) pdfFile.delete();
+            System.out.println("pdf拆分完成:\t"+pdfFile);
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("问题文件:\t" + pdfFile);
@@ -387,7 +374,7 @@ public class RdPdfUtil2 {
                 doc = PDDocument.load(pdfFile, MemoryUsageSetting.setupTempFileOnly());
                 PDFRenderer renderer = new PDFRenderer(doc);
                 //第二个参数越大生成图片分辨率越高。
-                BufferedImage image = renderer.renderImageWithDPI(0, 105);
+                BufferedImage image = renderer.renderImageWithDPI(0, 300);
                 //生成图片
                 ImageIO.write(image, "jpg", pictureFile);
                 doc.close();

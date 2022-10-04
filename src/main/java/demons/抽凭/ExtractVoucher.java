@@ -24,13 +24,14 @@ public class ExtractVoucher extends Executor {
     private String[] outPathKey; //输出的文件路径表头关键字
     private VoucherMatcher voucherMatcher;
     private Map<String, List<File>> willMergeMap;
+    private Map<String, Map<String, Object>> indexMap;
 
     public ExtractVoucher() {
         this.willMergeMap = new HashMap<>();
     }
 
 
-    public void setOutPathKey(String ...outPathKey){
+    public void setOutPathKey(String... outPathKey) {
         this.outPathKey = outPathKey;
     }
 
@@ -38,24 +39,29 @@ public class ExtractVoucher extends Executor {
     public void handleAllPdf() throws Exception {
         files = scanFiles();   //扫描所有文件,按指定规则排序
         readExcel();        //读取控制表
+        initIndexMap(rows);
         handle(files);  //处理这些文件
         mergeAll();   //合并抽凭后的文件
-        setTableHeadWords(new String[]{voucherName,"命中统计"});
+        setTableHeadWords(new String[]{voucherName, "命中统计"});
         writeExcel();  //写出命中统计
+    }
+
+    private void initIndexMap(List<Map<String, Object>> rows) {
+        indexMap = rows.stream().collect(Collectors.toMap(row -> row.get(voucherHead) + "", row -> row));
     }
 
 
     public void handleSinglePdf() throws Exception {
         multiFiles = scanDirFiles();
         readExcel();        //读取控制表
-        multiFiles.stream().forEach(fList->{
+        initIndexMap(rows);
+        multiFiles.stream().forEach(fList -> {
             handle(fList);  //处理这些文件
         });
         mergeAll();   //合并抽凭后的文件
-        setTableHeadWords(new String[]{voucherName,"命中统计"});
+        setTableHeadWords(new String[]{voucherName, "命中统计"});
         writeExcel();  //写出命中统计
     }
-
 
 
     public void handle(List<File> files) {
@@ -89,6 +95,7 @@ public class ExtractVoucher extends Executor {
                 }
                 relativePath = relativePath + File.separator + hitRow.get(voucherName) + ".pdf";
                 if (willMergeMap.get(relativePath) == null) {
+                    preHitRow.put("命中统计",fileList.size());
                     fileList = new ArrayList<>();
                     willMergeMap.put(relativePath, fileList);
                 }
@@ -101,9 +108,6 @@ public class ExtractVoucher extends Executor {
         //设置要导出的excel表格数据
         outRows = rows.stream().map(this::filtration).collect(Collectors.toList());
     }
-
-
-
 
 
     public Map<String, Object> filtration(Map<String, Object> row) {
@@ -142,13 +146,8 @@ public class ExtractVoucher extends Executor {
         if (CommonUtil.isEmpty(keyWord))
             return null;
 
-        Optional<Map<String, Object>> hitResult = rows
-                .parallelStream()
-                .filter(row -> keyWord.equals(row.get(voucherHead) + ""))
-                .findFirst();
-
-        if (hitResult.isPresent()) {
-            Map<String, Object> hitRow = hitResult.get();
+        if (indexMap.containsKey(keyWord)) {
+            Map<String, Object> hitRow = indexMap.get(keyWord);
             hitRow.put("命中统计", 1);
             return hitRow;
         }

@@ -7,11 +7,13 @@ import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 
 import lombok.Data;
+import org.jsoup.helper.StringUtil;
 import utils.RdFileUtil;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +24,14 @@ public abstract class Executor {
     protected String source;
     protected String dest;
     protected String excelSource;
+    protected String sheetIn;
     protected String excelDest;
+    protected String sheetOut;
     protected List<Map<String, Object>> rows;
-    protected List<Map<String, Object>> outRows;
+    protected List<Map<String, Object>> outRows = new ArrayList<>();
     protected String[] tableHeadWords;
     protected Comparator<File> comparator;
-    protected FileFilter fileFilter = f->f.getName().endsWith(".html");
+    protected FileFilter fileFilter = f -> f.getName().endsWith(".html");
 
     /**
      * source目录下的所有的文件
@@ -40,11 +44,19 @@ public abstract class Executor {
      */
     protected List<List<File>> multiFiles;
 
+    public void setExcelSource(String excelSource, String sheet) {
+        this.excelSource = excelSource;
+        this.sheetIn = sheet;
+    }
 
 
-
-    public void setTableHeadWords(String ...tableHeadWords){
+    public void setTableHeadWords(String... tableHeadWords) {
         this.tableHeadWords = tableHeadWords;
+    }
+
+    public void setExcelDest(String excelDest, String sheetOut) {
+        this.excelDest = excelDest;
+        this.sheetOut = sheetOut;
     }
 
     /**
@@ -63,10 +75,10 @@ public abstract class Executor {
      */
     public List<File> scanFiles() {
         long start = System.currentTimeMillis();
-        System.out.println("正在扫描:"+source);
+        System.out.println("正在扫描:" + source);
         this.files = FileUtil.loopFiles(source, fileFilter);
         long end = System.currentTimeMillis();
-        System.out.println("扫描结束,耗时"+(end-start)+"ms");
+        System.out.println("扫描结束,耗时" + (end - start) + "ms");
         files = sort(files);
         return files;
     }
@@ -75,21 +87,19 @@ public abstract class Executor {
     /**
      * 扫描 source目录下的所有目录下对应的文件(只包含目录当前目录，不包含子目录下的文件)
      */
-    public List<List<File>> scanDirFiles(){
+    public List<List<File>> scanDirFiles() {
         long start = System.currentTimeMillis();
-        System.out.println("正在扫描:"+source);
+        System.out.println("正在扫描:" + source);
         try {
             this.multiFiles = RdFileUtil.lsDirFiles(source, fileFilter);
         } catch (IOException e) {
             e.printStackTrace();
         }
         long end = System.currentTimeMillis();
-        System.out.println("扫描结束,耗时"+(end-start)+"ms");
-        multiFiles = multiFiles.stream().map(files->sort(files)).collect(Collectors.toList());
+        System.out.println("扫描结束,耗时" + (end - start) + "ms");
+        multiFiles = multiFiles.stream().map(files -> sort(files)).collect(Collectors.toList());
         return multiFiles;
     }
-
-
 
 
     /**
@@ -97,9 +107,10 @@ public abstract class Executor {
      */
     public void readExcel() {
         Assert.notEmpty(excelDest, "请设置需要读取的excel路径");
-        ExcelReader reader = ExcelUtil.getReader(excelSource);
+        ExcelReader reader = StringUtil.isBlank(sheetIn) ? ExcelUtil.getReader(excelSource) : ExcelUtil.getReader(new File(excelSource), sheetIn);
         rows = reader.readAll();
         reader.close();
+
     }
 
 
@@ -108,7 +119,7 @@ public abstract class Executor {
      */
     public void writeExcel() {
         Assert.notEmpty(excelDest, "请设置需要写出的excel路径");
-        ExcelWriter writer = ExcelUtil.getWriter(excelDest);
+        ExcelWriter writer = StringUtil.isBlank(sheetOut) ? ExcelUtil.getWriter(excelDest) : ExcelUtil.getWriter(excelDest, sheetOut);
         setTableHead(outRows);
         writer.write(outRows);
         writer.close();

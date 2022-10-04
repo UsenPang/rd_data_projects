@@ -18,7 +18,7 @@ public class OkHttpUtil {
                 .writeTimeout(30,TimeUnit.SECONDS)
                 .build();
         //设置单个主机的最大并发
-        client.dispatcher().setMaxRequestsPerHost(7);
+        client.dispatcher().setMaxRequestsPerHost(6);
     }
 
 
@@ -69,6 +69,7 @@ public class OkHttpUtil {
             }
         });
     }
+
 
 
 

@@ -12,11 +12,11 @@ import java.util.Map;
 public class Main {
 
     public static void main(String[] args) {
-        File file = new File("C:\\Users\\荣大\\Desktop\\报价单号及路径\\天溯结算单");
+        File file = new File("E:\\企业文件下载\\文件下载控制表");
 //        String[] sheets = {"20年", "21年", "22年"};
-        String[] sheets = {"21年"};
+        String[] sheets = {"20年","21年","22年"};
         File[] tables = file.listFiles();
-        String dest = "E:\\企业文件下载";
+        String dest = "G:\\潘永胜\\天溯计量";
 
         for (File table : tables) {
             String tableName = table.getName();
@@ -44,11 +44,13 @@ public class Main {
             if (file.exists())
                 continue;
 
-            try {
-                OkHttpUtil.download(url, filePath);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            OkHttpUtil.asyncDownload(url,filePath);
+
+//            try {
+//                OkHttpUtil.download(url, filePath);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
         }
     }
 

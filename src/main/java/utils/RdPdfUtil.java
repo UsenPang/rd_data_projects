@@ -56,8 +56,8 @@ public class RdPdfUtil {
         Pattern p = Pattern.compile("(pdf|PDF)");
         List<File> fileList = FileUtil.loopFiles(src, f -> p.matcher(FileUtil.getSuffix(f)).find());
 
-        int corePoolSize = 3;
-        int maximumPoolSize = 3;
+        int corePoolSize = 4;
+        int maximumPoolSize = 4;
         long keepAliveTime = 10;
         TimeUnit timeUnit = TimeUnit.SECONDS;
         BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();

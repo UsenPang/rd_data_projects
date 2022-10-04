@@ -21,7 +21,7 @@ public class ImgCountTask extends RecursiveTask<Integer> {
 
 
     public static void main(String[] args) {
-        File rootFile = new File("E:\\天溯计量\\天溯\\确认单附件\\2022");
+        File rootFile = new File("E:\\天溯计量\\天溯\\确认单附件");
 
         ForkJoinPool forkJoinPool = new ForkJoinPool();
         ImgCountTask task = new ImgCountTask(rootFile, FileType.IMAGE.getType());

@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Download {
+    private static List<String> heads;
     public static void main(String[] args) {
         String pdfExcel = "E:\\博泰车联网\\解析文件下载\\控制表\\下载汇总.xlsx";
         String imgExcel = "E:\\博泰车联网\\解析文件下载\\控制表\\rpa_image.xlsx";
@@ -34,8 +35,11 @@ public class Download {
         ExcelUtil.readBySax(imgExcel, 0, new RowHandler() {
             @Override
             public void handle(int sheetIndex, long rowIndex, List<Object> rowList) {
-                if (rowIndex == 0)
+                if (rowIndex == 0){
+                    heads = rowList.stream().map(obj->obj.toString()).collect(Collectors.toList());
                     return;
+                }
+
                 Map<String, Object> rowMap = toMap(rowList);
                 String fileId = rowMap.get("file_id").toString();
                 boolean isMatch = pdfList.parallelStream().anyMatch(pdfRow -> pdfRow.get("id").toString().equals(fileId));
@@ -78,10 +82,9 @@ public class Download {
 
 
     public static Map<String, Object> toMap(List<Object> rowList) {
-        String[] heads = {"id", "file_id", "org_id", "project_id", "image_name", "image_oss_path", "html_oss_path", "pdf_page"};
         Map<String, Object> map = new HashMap<>();
-        for (int i = 0; i < heads.length; i++) {
-            map.put(heads[i], rowList.get(i));
+        for (int i = 0; i < heads.size(); i++) {
+            map.put(heads.get(i), rowList.get(i));
         }
         return map;
     }
